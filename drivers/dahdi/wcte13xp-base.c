@@ -2903,6 +2903,26 @@ cleanup:
 	return res;
 }
 
+static void soft_reset_fpga(struct t13x *wc)
+{
+	/* digium_gpo */
+	iowrite32be(0x0, wc->membase);
+
+	/* xps_intc */
+	iowrite32be(0x0, wc->membase + 0x300);
+	iowrite32be(0x0, wc->membase + 0x308);
+	iowrite32be(0x0, wc->membase + 0x310);
+	iowrite32be(0x0, wc->membase + 0x31C);
+
+	/* xps_spi_config_flash */
+	iowrite32be(0xA, wc->membase + 0x200);
+
+	/* tdm engine */
+	iowrite32be(0x0, wc->membase + 0x2000);
+	iowrite32be(0x0, wc->membase + 0x2000);
+	iowrite32be(0x0, wc->membase + 0x2000);
+}
+
 static int __devinit te13xp_init_one(struct pci_dev *pdev,
 		const struct pci_device_id *ent)
 {
@@ -2979,10 +2999,7 @@ static int __devinit te13xp_init_one(struct pci_dev *pdev,
 		dev_info(&wc->dev->dev, "Unable to request regions\n");
 
 	/* Reset entire fpga */
-	pci_save_state(pdev);
-	iowrite32be(0xe00, wc->membase + TDM_CONTROL);
-	msleep(2000);
-	pci_restore_state(pdev);
+	soft_reset_fpga(wc);
 
 	/* Enable writes to fpga status register */
 	iowrite32be(0, wc->membase + 0x04);
