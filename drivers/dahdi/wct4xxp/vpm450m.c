@@ -141,6 +141,7 @@ struct vpm450m {
 	int chanflags[256];
 	int ecmode[256];
 	int numchans;
+	struct mutex lock;
 };
 
 #define FLAG_DTMF	 (1 << 0)
@@ -312,6 +313,8 @@ void vpm450m_setec(struct vpm450m *vpm450m, int channel, int eclen)
 		return;
 	}
 
+	mutex_lock(&vpm450m->lock);
+
 	if (eclen) {
 		vpm450m->chanflags[channel] |= FLAG_ECHO;
 		vpm450m_setecmode(vpm450m, channel, cOCT6100_ECHO_OP_MODE_HT_RESET);
@@ -324,6 +327,8 @@ void vpm450m_setec(struct vpm450m *vpm450m, int channel, int eclen)
 		} else
 			vpm450m_setecmode(vpm450m, channel, cOCT6100_ECHO_OP_MODE_DIGITAL);
 	}
+
+	mutex_unlock(&vpm450m->lock);
 /*	printk(KERN_DEBUG "VPM450m: Setting EC on channel %d to %d\n", channel, eclen); */
 }
 
@@ -608,6 +613,8 @@ struct vpm450m *init_vpm450m(struct device *device, int *isalaw,
 			}
 		}
 	}
+
+	mutex_init(&vpm450m->lock);
 
 	kfree(ChipOpen);
 	kfree(ChannelOpen);
