@@ -334,6 +334,11 @@ int vpm450m_checkirq(struct vpm450m *vpm450m)
 	Oct6100InterruptServiceRoutineDef(&InterruptFlags);
 	Oct6100InterruptServiceRoutine(vpm450m->pApiInstance, &InterruptFlags);
 
+	if (InterruptFlags.fFatalGeneral) {
+		printk_once(KERN_INFO "VPM reported fatal general error: %x\n",
+				InterruptFlags.ulFatalGeneralFlags);
+	}
+
 	return InterruptFlags.fToneEventsPending ? 1 : 0;
 }
 

@@ -1557,6 +1557,18 @@ struct mutex {
 #define WARN_ONCE(condition, format...) WARN_ON_ONCE(condition)
 #endif
 
+/* Backport printk_once as it's not supported in centos 5.10 */
+#ifndef printk_once
+#define printk_once(x...) ({			\
+	static bool __print_once = true;	\
+						\
+	if (__print_once) {			\
+		__print_once = false;		\
+		printk(x);			\
+	}					\
+})
+#endif
+
 #define	DAHDI_CTL	0
 #define	DAHDI_TRANSCODE	250
 #define	DAHDI_TIMER	253
