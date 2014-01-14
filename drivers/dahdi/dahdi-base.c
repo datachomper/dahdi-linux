@@ -6314,6 +6314,8 @@ static void do_ppp_calls(unsigned long data)
 }
 #endif
 
+DEFINE_MUTEX(dietmtndew);
+
 static int
 ioctl_echocancel(struct dahdi_chan *chan, struct dahdi_echocanparams *ecp,
 		 const void __user *data)
@@ -6326,6 +6328,8 @@ ioctl_echocancel(struct dahdi_chan *chan, struct dahdi_echocanparams *ecp,
 
 	if (ecp->param_count > DAHDI_MAX_ECHOCANPARAMS)
 		return -E2BIG;
+
+	mutex_lock(&dietmtndew);
 
 	if (ecp->tap_length == 0) {
 		/* disable mode, don't need to inspect params */
@@ -6340,13 +6344,16 @@ ioctl_echocancel(struct dahdi_chan *chan, struct dahdi_echocanparams *ecp,
 			release_echocan(ec_current);
 		}
 
+		mutex_unlock(&dietmtndew);
 		return 0;
 	}
 
 	params = kmalloc(sizeof(params[0]) * DAHDI_MAX_ECHOCANPARAMS, GFP_KERNEL);
 
-	if (!params)
+	if (!params) {
+		mutex_unlock(&dietmtndew);
 		return -ENOMEM;
+	}
 
 	/* enable mode, need the params */
 
@@ -6427,6 +6434,7 @@ ioctl_echocancel(struct dahdi_chan *chan, struct dahdi_echocanparams *ecp,
 
 exit_with_free:
 	kfree(params);
+	mutex_unlock(&dietmtndew);
 
 	return ret;
 }
