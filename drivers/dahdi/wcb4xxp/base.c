@@ -82,6 +82,8 @@
 
 #define DBG_SPANFILTER		(BIT(bspan->port) & spanfilter)
 
+#define PAYLOADLOOP 1
+
 static int debug = 0;
 static int spanfilter = 0xFF; /* Bitmap for ports 1-8 */
 #ifdef LOOPBACK_SUPPORTED
@@ -92,6 +94,7 @@ static int pedanticpci = 0;
 static int teignorered = 0;
 static int alarmdebounce = 500;
 static int persistentlayer1 = 1;
+static int testmode = 0;
 static int vpmsupport = 1;
 static int timer_1_ms = 2000;
 static int timer_3_ms = 30000;
@@ -1944,8 +1947,13 @@ static int hfc_poll_one_bchan_fifo(struct b4xxp_span *span, int c)
 
 		hfc_setreg_waitbusy(b4, R_FIFO, (fifo << V_FIFO_NUM_SHIFT) | V_REV);
 
-		b4xxp_setreg32(b4, A_FIFO_DATA2, *(unsigned int *) &chan->writechunk[0]);
-		b4xxp_setreg32(b4, A_FIFO_DATA2, *(unsigned int *) &chan->writechunk[4]);
+		if (testmode == PAYLOADLOOP) {
+			b4xxp_setreg32(b4, A_FIFO_DATA2, *(unsigned int *) &chan->readchunk[0]);
+			b4xxp_setreg32(b4, A_FIFO_DATA2, *(unsigned int *) &chan->readchunk[4]);
+		} else {
+			b4xxp_setreg32(b4, A_FIFO_DATA2, *(unsigned int *) &chan->writechunk[0]);
+			b4xxp_setreg32(b4, A_FIFO_DATA2, *(unsigned int *) &chan->writechunk[4]);
+		}
 		ret = 1;
 	}
 
@@ -3546,6 +3554,7 @@ module_param(timer_1_ms, int, S_IRUGO | S_IWUSR);
 module_param(timer_3_ms, int, S_IRUGO | S_IWUSR);
 module_param(companding, charp, S_IRUGO);
 module_param(persistentlayer1, int, S_IRUGO | S_IWUSR);
+module_param(testmode, int, S_IRUGO | S_IWUSR);
 
 MODULE_PARM_DESC(debug, "bitmap: 1=general 2=dtmf 4=regops 8=fops 16=ec 32=st state 64=hdlc 128=alarm");
 MODULE_PARM_DESC(spanfilter, "debug filter for spans. bitmap: 1=port 1, 2=port 2, 4=port 3, 8=port 4");
@@ -3561,6 +3570,7 @@ MODULE_PARM_DESC(timer_1_ms, "NT: msec to wait for link activation, TE: unused."
 MODULE_PARM_DESC(timer_3_ms, "TE: msec to wait for link activation, NT: unused.");
 MODULE_PARM_DESC(companding, "Change the companding to \"alaw\" or \"ulaw\""\
 				"(alaw by default)");
+MODULE_PARM_DESC(testmode, "0=Normal Operation 1=payload loopback");
 
 MODULE_AUTHOR("Digium Incorporated <support@digium.com>");
 MODULE_DESCRIPTION("B410P & Similars multi-port BRI module driver.");
